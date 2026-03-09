@@ -32,21 +32,20 @@ struct WindowView: View {
                         VStack(spacing: 24) {
                             // Date header at the very top
                             ZStack {
-                                // Centered date text - clickable to go to today
-                                Button(action: {
-                                    let today = Date()
-                                    let calendar = Calendar.current
-                                    let weekday = calendar.component(.weekday, from: today)
-                                    let daysFromMonday = (weekday + 5) % 7
-                                    if let weekStart = calendar.date(byAdding: .day, value: -daysFromMonday, to: today) {
-                                        weekStartDate = weekStart
+                                // Centered date text - clickable to go to today (using onTapGesture to avoid button highlight)
+                                Text(selectedDate.formatted(date: .abbreviated, time: .omitted))
+                                    .font(.headline)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        let today = Date()
+                                        let calendar = Calendar.current
+                                        let weekday = calendar.component(.weekday, from: today)
+                                        let daysFromMonday = (weekday + 5) % 7
+                                        if let weekStart = calendar.date(byAdding: .day, value: -daysFromMonday, to: today) {
+                                            weekStartDate = weekStart
+                                        }
+                                        selectedDate = today
                                     }
-                                    selectedDate = today
-                                }) {
-                                    Text(selectedDate.formatted(date: .abbreviated, time: .omitted))
-                                        .font(.headline)
-                                }
-                                .buttonStyle(.plain)
 
                                 // Spinner on the right, doesn't affect centering
                                 HStack {

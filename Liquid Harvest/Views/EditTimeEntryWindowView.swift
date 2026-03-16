@@ -5,9 +5,9 @@
 //  Created by Martyn Chamberlin on 11/29/25.
 //
 
-import SwiftUI
-import Combine
 import AppKit
+import Combine
+import SwiftUI
 
 // Shared state for passing data when opening a new window
 class EditTimeEntryWindowState: ObservableObject {
@@ -63,12 +63,12 @@ struct EditTimeEntryWindowView: View {
             billableRate: nil,
             costRate: nil,
             createdAt: "",
-            updatedAt: ""
+            updatedAt: "",
         )
         _instanceState = StateObject(wrappedValue: EditTimeEntryWindowInstanceState(
             entry: entry,
             onSave: shared.onSave,
-            timerViewModel: shared.timerViewModel
+            timerViewModel: shared.timerViewModel,
         ))
     }
 
@@ -80,7 +80,7 @@ struct EditTimeEntryWindowView: View {
                 await instanceState.onSave?()
                 // Close only this specific window instance
                 window?.close()
-            }
+            },
         )
         .padding(20)
         .glassEffect()
@@ -93,7 +93,7 @@ struct EditTimeEntryWindowView: View {
 struct WindowAccessorForEditWindow: NSViewRepresentable {
     @Binding var window: NSWindow?
 
-    func makeNSView(context: Context) -> NSView {
+    func makeNSView(context _: Context) -> NSView {
         let view = NSView()
         DispatchQueue.main.async {
             if let window = view.window {
@@ -104,7 +104,7 @@ struct WindowAccessorForEditWindow: NSViewRepresentable {
         return view
     }
 
-    func updateNSView(_ nsView: NSView, context: Context) {
+    func updateNSView(_ nsView: NSView, context _: Context) {
         DispatchQueue.main.async {
             if let window = nsView.window {
                 self.window = window
@@ -122,4 +122,3 @@ struct WindowAccessorForEditWindow: NSViewRepresentable {
         window.backgroundColor = .clear
     }
 }
-

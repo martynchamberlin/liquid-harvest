@@ -5,8 +5,8 @@
 //  Created by Martyn Chamberlin on 11/29/25.
 //
 
-import SwiftUI
 import AppKit
+import SwiftUI
 
 struct WindowView: View {
     @StateObject private var timerViewModel = TimerViewModel()
@@ -80,7 +80,7 @@ struct WindowView: View {
                                         timeEntriesViewModel.isLoading = false
                                         timeEntriesViewModel.errorMessage = nil
                                     }
-                                }
+                                },
                             )
 
                             // Starting a timer
@@ -92,7 +92,7 @@ struct WindowView: View {
                                 timerViewModel: timerViewModel,
                                 projectsViewModel: projectsViewModel,
                                 selectedDate: $selectedDate,
-                                isChangingWeek: isChangingWeek
+                                isChangingWeek: isChangingWeek,
                             )
                             .id(timerViewModel.runningTimer?.timeEntry.id ?? 0)
                         }
@@ -134,7 +134,7 @@ struct WindowView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             navigateToToday()
         }
-        .onChange(of: authViewModel.isAuthenticated) { oldValue, newValue in
+        .onChange(of: authViewModel.isAuthenticated) { _, newValue in
             if newValue {
                 // Check for running timer immediately when authenticated
                 _Concurrency.Task {
@@ -145,7 +145,7 @@ struct WindowView: View {
                 timerViewModel.runningTimer = nil
             }
         }
-        .onChange(of: weekStartDate) { oldDate, newDate in
+        .onChange(of: weekStartDate) { _, newDate in
             // Set flag to prevent selectedDate onChange from also fetching
             isChangingWeek = true
 
@@ -154,8 +154,8 @@ struct WindowView: View {
             let weekday = calendar.component(.weekday, from: newDate)
             let daysFromMonday = (weekday + 5) % 7
             if let weekStart = calendar.date(byAdding: .day, value: -daysFromMonday, to: newDate),
-               let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) {
-
+               let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart)
+            {
                 let dateFormatter = DateFormatter()
                 dateFormatter.dateFormat = "yyyy-MM-dd"
                 dateFormatter.timeZone = TimeZone.current
@@ -168,7 +168,7 @@ struct WindowView: View {
                 var allDaysCached = true
                 var cachedDays: [String] = []
                 var missingDays: [String] = []
-                for dayOffset in 0..<7 {
+                for dayOffset in 0 ..< 7 {
                     guard let weekDate = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) else { continue }
                     let dateString = dateFormatter.string(from: weekDate)
                     let isFutureDate = weekDate > today
@@ -258,4 +258,3 @@ struct WindowView: View {
 #Preview {
     WindowView()
 }
-

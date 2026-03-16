@@ -108,28 +108,28 @@ struct TimeEntryRequest: Codable {
         var container = encoder.container(keyedBy: CodingKeys.self)
 
         // Only encode non-nil values
-        if let projectId = projectId {
+        if let projectId {
             try container.encode(projectId, forKey: .projectId)
         }
-        if let taskId = taskId {
+        if let taskId {
             try container.encode(taskId, forKey: .taskId)
         }
-        if let spentDate = spentDate {
+        if let spentDate {
             try container.encode(spentDate, forKey: .spentDate)
         }
-        if let startedTime = startedTime {
+        if let startedTime {
             try container.encode(startedTime, forKey: .startedTime)
         }
-        if let endedTime = endedTime {
+        if let endedTime {
             try container.encode(endedTime, forKey: .endedTime)
         }
-        if let hours = hours {
+        if let hours {
             try container.encode(hours, forKey: .hours)
         }
-        if let notes = notes {
+        if let notes {
             try container.encode(notes, forKey: .notes)
         }
-        if let externalReference = externalReference {
+        if let externalReference {
             try container.encode(externalReference, forKey: .externalReference)
         }
     }
@@ -148,4 +148,3 @@ struct ExternalReference: Codable {
         case permalink
     }
 }
-

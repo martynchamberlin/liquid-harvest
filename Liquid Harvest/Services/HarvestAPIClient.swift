@@ -5,8 +5,8 @@
 //  Created by Martyn Chamberlin on 11/29/25.
 //
 
-import Foundation
 import Combine
+import Foundation
 
 enum HarvestAPIError: Error, LocalizedError {
     case invalidURL
@@ -19,17 +19,17 @@ enum HarvestAPIError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidURL:
-            return "Invalid URL"
+            "Invalid URL"
         case .invalidResponse:
-            return "Invalid response from server"
-        case .httpError(let code):
-            return "HTTP error: \(code)"
-        case .decodingError(let error):
-            return "Failed to decode response: \(error.localizedDescription)"
+            "Invalid response from server"
+        case let .httpError(code):
+            "HTTP error: \(code)"
+        case let .decodingError(error):
+            "Failed to decode response: \(error.localizedDescription)"
         case .unauthorized:
-            return "Unauthorized - please log in again"
-        case .networkError(let error):
-            return "Network error: \(error.localizedDescription)"
+            "Unauthorized - please log in again"
+        case let .networkError(error):
+            "Network error: \(error.localizedDescription)"
         }
     }
 }
@@ -43,23 +43,23 @@ class HarvestAPIClient {
     private init() {}
 
     func setAccessToken(_ token: String) {
-        self.accessToken = token
+        accessToken = token
     }
 
     func clearAccessToken() {
-        self.accessToken = nil
+        accessToken = nil
     }
 
     private func makeRequest<T: Decodable>(
         endpoint: String,
         method: String = "GET",
         body: Encodable? = nil,
-        queryParams: [String: String]? = nil
+        queryParams: [String: String]? = nil,
     ) async throws -> T {
         var urlString = "\(baseURL)\(endpoint)"
 
         // Add query parameters if provided
-        if let queryParams = queryParams, !queryParams.isEmpty {
+        if let queryParams, !queryParams.isEmpty {
             var components = URLComponents(string: urlString)
             components?.queryItems = queryParams.map { URLQueryItem(name: $0.key, value: $0.value) }
             if let finalURL = components?.url?.absoluteString {
@@ -84,7 +84,7 @@ class HarvestAPIClient {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
 
-        if let body = body {
+        if let body {
             do {
                 let encoder = JSONEncoder()
                 // Don't use convertToSnakeCase - our models have explicit CodingKeys
@@ -118,7 +118,7 @@ class HarvestAPIClient {
                 throw HarvestAPIError.unauthorized
             }
 
-            guard (200...299).contains(httpResponse.statusCode) else {
+            guard (200 ... 299).contains(httpResponse.statusCode) else {
                 let errorBody = String(data: data, encoding: .utf8) ?? "No error body"
                 print("❌ HTTP error \(httpResponse.statusCode) for \(endpoint)")
                 print("❌ Error body: \(errorBody)")
@@ -131,11 +131,12 @@ class HarvestAPIClient {
                 throw HarvestAPIError.httpError(httpResponse.statusCode)
             }
 
-                // Log concise response summary instead of full JSON
+            // Log concise response summary instead of full JSON
             if let responseString = String(data: data, encoding: .utf8) {
                 // Try to parse and summarize instead of printing everything
                 if let jsonData = responseString.data(using: .utf8),
-                   let jsonObject = try? JSONSerialization.jsonObject(with: jsonData, options: []) {
+                   let jsonObject = try? JSONSerialization.jsonObject(with: jsonData, options: [])
+                {
                     // Summarize based on structure
                     if let dict = jsonObject as? [String: Any] {
                         // Check for common Harvest response structures
@@ -226,26 +227,26 @@ class HarvestAPIClient {
         var endpoint = "/time_entries"
         var queryItems: [String] = []
 
-        if let isRunning = isRunning {
+        if let isRunning {
             queryItems.append("is_running=\(isRunning)")
         }
 
         // If spentDate is provided, use it alone (more specific than from/to range)
         // Only add from/to if spentDate is NOT provided
-        if let spentDate = spentDate {
+        if let spentDate {
             queryItems.append("spent_date=\(spentDate)")
         } else {
             // Add date range filtering to limit results (only when spentDate is not provided)
-            if let from = from {
+            if let from {
                 queryItems.append("from=\(from)")
             }
 
-            if let to = to {
+            if let to {
                 queryItems.append("to=\(to)")
             }
 
             // If no date filter is provided at all, default to current week
-            if from == nil && to == nil {
+            if from == nil, to == nil {
                 let calendar = Calendar.current
                 let today = Date()
                 let weekday = calendar.component(.weekday, from: today)
@@ -255,7 +256,8 @@ class HarvestAPIClient {
                 dateFormatter.dateFormat = "yyyy-MM-dd"
 
                 if let weekStart = calendar.date(byAdding: .day, value: -daysFromMonday, to: today),
-                   let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) {
+                   let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart)
+                {
                     let weekStartString = dateFormatter.string(from: weekStart)
                     let weekEndString = dateFormatter.string(from: weekEnd)
                     queryItems.append("from=\(weekStartString)")
@@ -316,7 +318,7 @@ class HarvestAPIClient {
             endpoint: "/time_entries",
             method: "POST",
             body: nil,
-            queryParams: queryParams.isEmpty ? nil : queryParams
+            queryParams: queryParams.isEmpty ? nil : queryParams,
         )
         return timeEntry
     }
@@ -347,39 +349,39 @@ class HarvestAPIClient {
             }
 
             init(from request: TimeEntryRequest) {
-                self.projectId = request.projectId
-                self.taskId = request.taskId
-                self.spentDate = request.spentDate
-                self.startedTime = request.startedTime
-                self.endedTime = request.endedTime
-                self.hours = request.hours
-                self.notes = request.notes
+                projectId = request.projectId
+                taskId = request.taskId
+                spentDate = request.spentDate
+                startedTime = request.startedTime
+                endedTime = request.endedTime
+                hours = request.hours
+                notes = request.notes
             }
 
             func encode(to encoder: Encoder) throws {
                 var container = encoder.container(keyedBy: CodingKeys.self)
 
                 // Only encode non-nil values
-                if let projectId = projectId {
+                if let projectId {
                     try container.encode(projectId, forKey: .projectId)
                 }
-                if let taskId = taskId {
+                if let taskId {
                     try container.encode(taskId, forKey: .taskId)
                 }
-                if let spentDate = spentDate {
+                if let spentDate {
                     try container.encode(spentDate, forKey: .spentDate)
                 }
-                if let startedTime = startedTime {
+                if let startedTime {
                     try container.encode(startedTime, forKey: .startedTime)
                 }
-                if let endedTime = endedTime {
+                if let endedTime {
                     try container.encode(endedTime, forKey: .endedTime)
                 }
-                if let hours = hours {
+                if let hours {
                     try container.encode(hours, forKey: .hours)
                 }
                 // Always encode notes if provided (even if empty string) to allow clearing notes
-                if let notes = notes {
+                if let notes {
                     try container.encode(notes, forKey: .notes)
                 }
             }
@@ -389,7 +391,7 @@ class HarvestAPIClient {
         let timeEntry: TimeEntry = try await makeRequest(
             endpoint: "/time_entries/\(id)",
             method: "PATCH",
-            body: FlatRequest(from: request)
+            body: FlatRequest(from: request),
         )
 
         // Debug: Print the response to verify notes were saved
@@ -402,7 +404,7 @@ class HarvestAPIClient {
         // The stop endpoint returns the time entry directly, not wrapped
         let timeEntry: TimeEntry = try await makeRequest(
             endpoint: "/time_entries/\(id)/stop",
-            method: "PATCH"
+            method: "PATCH",
         )
         return timeEntry
     }
@@ -441,7 +443,7 @@ class HarvestAPIClient {
             return
         }
 
-        guard (200...299).contains(httpResponse.statusCode) else {
+        guard (200 ... 299).contains(httpResponse.statusCode) else {
             let errorBody = String(data: data, encoding: .utf8) ?? "No error body"
             print("❌ HTTP error \(httpResponse.statusCode) for DELETE /time_entries/\(id)")
             print("❌ Error body: \(errorBody)")
@@ -459,7 +461,7 @@ class HarvestAPIClient {
 
     func getProjects(isActive: Bool? = nil) async throws -> [Project] {
         var endpoint = "/projects"
-        if let isActive = isActive {
+        if let isActive {
             endpoint += "?is_active=\(isActive)"
         }
         print("🔵 Fetching projects from: \(endpoint)")
@@ -470,10 +472,8 @@ class HarvestAPIClient {
 
     func getTaskAssignments(projectId: Int64) async throws -> [TaskAssignment] {
         let response: TaskAssignmentResponse = try await makeRequest(
-            endpoint: "/projects/\(projectId)/task_assignments"
+            endpoint: "/projects/\(projectId)/task_assignments",
         )
         return response.taskAssignments
     }
 }
-
-

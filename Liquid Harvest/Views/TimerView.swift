@@ -73,7 +73,8 @@ struct TimerView: View {
                     // When not running, use local state
                     if let projectId = selectedProjectId,
                        let project = projectsViewModel.projects.first(where: { $0.id == projectId }),
-                       let client = project.client {
+                       let client = project.client
+                    {
                         Text(client.name)
                             .font(.headline)
                             .foregroundStyle(.tertiary)
@@ -165,7 +166,7 @@ struct TimerView: View {
                         await timerViewModel.startTimer(
                             projectId: projectId,
                             taskId: taskId,
-                            notes: timerViewModel.description.isEmpty ? nil : timerViewModel.description
+                            notes: timerViewModel.description.isEmpty ? nil : timerViewModel.description,
                         )
                     }
                 }) {
@@ -216,7 +217,8 @@ struct TimerView: View {
                 }
 
                 if let projectId = lastProjectId,
-                   projectsViewModel.projects.contains(where: { $0.id == projectId }) {
+                   projectsViewModel.projects.contains(where: { $0.id == projectId })
+                {
                     // Set project ID and load tasks
                     selectedProjectId = projectId
                     await projectsViewModel.loadTasks(for: projectId)
@@ -234,7 +236,8 @@ struct TimerView: View {
                     }
 
                     if let taskId = lastTaskId,
-                       projectsViewModel.taskAssignments.contains(where: { $0.task.id == taskId }) {
+                       projectsViewModel.taskAssignments.contains(where: { $0.task.id == taskId })
+                    {
                         selectedTaskId = taskId
                     } else if let firstTask = projectsViewModel.taskAssignments.first {
                         // If last used task is not available, select the first task
@@ -265,13 +268,13 @@ struct TimerView: View {
         .sheet(isPresented: $showingProjectPicker) {
             ProjectPickerView(
                 projects: projectsViewModel.projects,
-                selectedProjectId: $selectedProjectId
+                selectedProjectId: $selectedProjectId,
             )
         }
         .sheet(isPresented: $showingTaskPicker) {
             TaskPickerView(
                 taskAssignments: projectsViewModel.taskAssignments,
-                selectedTaskId: $selectedTaskId
+                selectedTaskId: $selectedTaskId,
             )
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ToggleTimer"))) { _ in
@@ -289,7 +292,7 @@ struct TimerView: View {
                     await timerViewModel.startTimer(
                         projectId: projectId,
                         taskId: taskId,
-                        notes: timerViewModel.description.isEmpty ? nil : timerViewModel.description
+                        notes: timerViewModel.description.isEmpty ? nil : timerViewModel.description,
                     )
                 }
             }
@@ -348,4 +351,3 @@ struct TaskPickerView: View {
     TimerView(timerViewModel: TimerViewModel(), projectsViewModel: ProjectsViewModel())
         .padding()
 }
-

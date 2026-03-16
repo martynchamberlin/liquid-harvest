@@ -5,10 +5,10 @@
 //  Created by Martyn Chamberlin on 11/29/25.
 //
 
-import Foundation
-import CryptoKit
-import Combine
 import AppKit
+import Combine
+import CryptoKit
+import Foundation
 
 struct OAuthTokenResponse: Codable {
     let accessToken: String
@@ -35,10 +35,10 @@ struct OAuthTokens: Codable {
     }
 
     init(from response: OAuthTokenResponse, createdAt: Date = Date()) {
-        self.accessToken = response.accessToken
-        self.refreshToken = response.refreshToken
-        self.expiresIn = response.expiresIn ?? 3600 // Default to 1 hour if not provided
-        self.tokenType = response.tokenType ?? "Bearer"
+        accessToken = response.accessToken
+        refreshToken = response.refreshToken
+        expiresIn = response.expiresIn ?? 3600 // Default to 1 hour if not provided
+        tokenType = response.tokenType ?? "Bearer"
         self.createdAt = createdAt
     }
 
@@ -90,7 +90,7 @@ class AuthenticationManager: ObservableObject {
             self,
             selector: #selector(clientIdUpdated),
             name: NSNotification.Name("HarvestClientIDUpdated"),
-            object: nil
+            object: nil,
         )
     }
 
@@ -121,7 +121,7 @@ class AuthenticationManager: ObservableObject {
     }
 
     func startOAuthFlow() {
-        guard let clientId = clientId else {
+        guard let clientId else {
             print("Error: Client ID not configured. Please set it in Setup.")
             return
         }
@@ -136,8 +136,8 @@ class AuthenticationManager: ObservableObject {
 
         // Start local HTTP server to catch callback
         localServer.start(port: 5006, onCode: { [weak self] code in
-            guard let self = self else { return }
-            self.localServer.stop()
+            guard let self else { return }
+            localServer.stop()
             _Concurrency.Task { @MainActor in
                 do {
                     try await self.handleOAuthCallback(code: code)
@@ -147,7 +147,7 @@ class AuthenticationManager: ObservableObject {
                     NotificationCenter.default.post(
                         name: NSNotification.Name("OAuthError"),
                         object: nil,
-                        userInfo: ["error": error.localizedDescription]
+                        userInfo: ["error": error.localizedDescription],
                     )
                 }
             }
@@ -157,7 +157,7 @@ class AuthenticationManager: ObservableObject {
             NotificationCenter.default.post(
                 name: NSNotification.Name("OAuthError"),
                 object: nil,
-                userInfo: ["error": error]
+                userInfo: ["error": error],
             )
         })
 
@@ -172,7 +172,7 @@ class AuthenticationManager: ObservableObject {
             URLQueryItem(name: "response_type", value: "code"),
             URLQueryItem(name: "redirect_uri", value: redirectURI),
             URLQueryItem(name: "code_challenge", value: codeChallenge),
-            URLQueryItem(name: "code_challenge_method", value: "S256")
+            URLQueryItem(name: "code_challenge_method", value: "S256"),
         ]
 
         guard let url = components.url else {
@@ -186,11 +186,11 @@ class AuthenticationManager: ObservableObject {
     }
 
     func handleOAuthCallback(code: String) async throws {
-        guard let clientId = clientId else {
+        guard let clientId else {
             throw NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Client ID not configured"])
         }
 
-        guard let clientSecret = clientSecret else {
+        guard let clientSecret else {
             throw NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Client Secret not configured"])
         }
 
@@ -212,7 +212,7 @@ class AuthenticationManager: ObservableObject {
             "code": code,
             "grant_type": "authorization_code",
             "redirect_uri": redirectURI,
-            "code_verifier": verifier
+            "code_verifier": verifier,
         ]
 
         print("🔵 Exchanging code for tokens...")
@@ -227,14 +227,14 @@ class AuthenticationManager: ObservableObject {
             throw NSError(domain: "AuthenticationManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid response from server"])
         }
 
-        guard (200...299).contains(httpResponse.statusCode) else {
+        guard (200 ... 299).contains(httpResponse.statusCode) else {
             let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
             print("❌ Token exchange failed with status \(httpResponse.statusCode)")
             print("❌ Response body: \(errorMessage)")
             throw NSError(
                 domain: "AuthenticationManager",
                 code: httpResponse.statusCode,
-                userInfo: [NSLocalizedDescriptionKey: "Failed to exchange code for tokens: \(errorMessage)"]
+                userInfo: [NSLocalizedDescriptionKey: "Failed to exchange code for tokens: \(errorMessage)"],
             )
         }
 
@@ -244,7 +244,7 @@ class AuthenticationManager: ObservableObject {
             throw NSError(
                 domain: "AuthenticationManager",
                 code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "Token exchange returned empty response"]
+                userInfo: [NSLocalizedDescriptionKey: "Token exchange returned empty response"],
             )
         }
 
@@ -294,19 +294,19 @@ class AuthenticationManager: ObservableObject {
             throw NSError(
                 domain: "AuthenticationManager",
                 code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "Failed to decode token response: \(error.localizedDescription)"]
+                userInfo: [NSLocalizedDescriptionKey: "Failed to decode token response: \(error.localizedDescription)"],
             )
         }
     }
 
     func refreshTokenIfNeeded() async {
-        guard let clientId = clientId else {
+        guard let clientId else {
             print("Error: Client ID not configured. Cannot refresh token.")
             logout()
             return
         }
 
-        guard let clientSecret = clientSecret else {
+        guard let clientSecret else {
             print("Error: Client Secret not configured. Cannot refresh token.")
             logout()
             return
@@ -333,7 +333,7 @@ class AuthenticationManager: ObservableObject {
             "client_id": clientId,
             "client_secret": clientSecret,
             "refresh_token": refreshToken,
-            "grant_type": "refresh_token"
+            "grant_type": "refresh_token",
         ]
 
         do {
@@ -341,7 +341,8 @@ class AuthenticationManager: ObservableObject {
             let (data, response) = try await URLSession.shared.data(for: request)
 
             guard let httpResponse = response as? HTTPURLResponse,
-                  (200...299).contains(httpResponse.statusCode) else {
+                  (200 ... 299).contains(httpResponse.statusCode)
+            else {
                 // Refresh failed, need to re-authenticate
                 logout()
                 return
@@ -403,14 +404,16 @@ class AuthenticationManager: ObservableObject {
     private func saveTokens(_ tokens: OAuthTokens) {
         let encoder = JSONEncoder()
         if let data = try? encoder.encode(tokens),
-           let jsonString = String(data: data, encoding: .utf8) {
+           let jsonString = String(data: data, encoding: .utf8)
+        {
             keychain.save(key: "oauth_tokens", value: jsonString)
         }
     }
 
     private func loadTokens() -> OAuthTokens? {
         guard let jsonString = keychain.get(key: "oauth_tokens"),
-              let data = jsonString.data(using: .utf8) else {
+              let data = jsonString.data(using: .utf8)
+        else {
             return nil
         }
 
@@ -421,11 +424,10 @@ class AuthenticationManager: ObservableObject {
 
 extension Data {
     func base64URLEncodedString() -> String {
-        return base64EncodedString()
+        base64EncodedString()
             .replacingOccurrences(of: "+", with: "-")
             .replacingOccurrences(of: "/", with: "_")
             .replacingOccurrences(of: "=", with: "")
             .trimmingCharacters(in: .whitespaces)
     }
 }
-

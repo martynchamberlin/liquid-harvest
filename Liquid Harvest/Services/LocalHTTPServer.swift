@@ -16,8 +16,8 @@ class LocalHTTPServer {
 
     func start(port: UInt16 = 5006, onCode: @escaping (String) -> Void, onError: @escaping (String) -> Void) {
         self.port = port
-        self.callback = onCode
-        self.errorCallback = onError
+        callback = onCode
+        errorCallback = onError
 
         let parameters = NWParameters.tcp
         parameters.allowLocalEndpointReuse = true
@@ -44,7 +44,7 @@ class LocalHTTPServer {
         connection.start(queue: .global())
 
         connection.receive(minimumIncompleteLength: 1, maximumLength: 8192) { [weak self] data, _, isComplete, error in
-            if let data = data, let request = String(data: data, encoding: .utf8) {
+            if let data, let request = String(data: data, encoding: .utf8) {
                 self?.handleRequest(request, connection: connection)
             }
 
@@ -143,4 +143,3 @@ class LocalHTTPServer {
         return params
     }
 }
-

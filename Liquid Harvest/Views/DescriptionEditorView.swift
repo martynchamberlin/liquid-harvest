@@ -107,4 +107,3 @@ struct DescriptionEditorView: View {
     DescriptionEditorView(timerViewModel: TimerViewModel())
         .padding()
 }
-

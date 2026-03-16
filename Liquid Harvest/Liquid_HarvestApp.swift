@@ -5,8 +5,8 @@
 //  Created by Martyn Chamberlin on 11/29/25.
 //
 
-import SwiftUI
 import AppKit
+import SwiftUI
 
 @main
 struct Liquid_HarvestApp: App {
@@ -59,7 +59,6 @@ struct Liquid_HarvestApp: App {
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 480, height: 320)
     }
-
 }
 
 // Custom NSView that monitors key events
@@ -75,22 +74,24 @@ class KeyEventMonitoringView: NSView {
             eventMonitor = nil
         }
 
-        guard let window = window else { return }
+        guard let window else { return }
 
         // Add local event monitor to catch Return/Enter presses
         eventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown]) { [weak window] event in
             // Only handle if this window is key and Return/Enter is pressed (keyCode 36)
-            guard let window = window,
+            guard let window,
                   window.isKeyWindow,
                   event.keyCode == 36, // Return/Enter
                   !event.isARepeat,
-                  event.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty else {
+                  event.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty
+            else {
                 return event
             }
 
             // Check if the user is typing in a text field (don't intercept)
             if let firstResponder = window.firstResponder as? NSTextView,
-               firstResponder.isEditable {
+               firstResponder.isEditable
+            {
                 return event
             }
 
@@ -109,7 +110,7 @@ class KeyEventMonitoringView: NSView {
 
 // Helper view to access and configure the NSWindow
 struct WindowAccessor: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSView {
+    func makeNSView(context _: Context) -> NSView {
         let view = KeyEventMonitoringView()
         DispatchQueue.main.async {
             if let window = view.window {
@@ -119,7 +120,7 @@ struct WindowAccessor: NSViewRepresentable {
         return view
     }
 
-    func updateNSView(_ nsView: NSView, context: Context) {
+    func updateNSView(_ nsView: NSView, context _: Context) {
         DispatchQueue.main.async {
             if let window = nsView.window {
                 configureWindow(window)

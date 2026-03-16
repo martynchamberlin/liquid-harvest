@@ -5,9 +5,9 @@
 //  Created by Martyn Chamberlin on 11/29/25.
 //
 
-import SwiftUI
-import Combine
 import AppKit
+import Combine
+import SwiftUI
 
 struct TodayTimeEntriesView: View {
     @StateObject private var viewModel = TodayTimeEntriesViewModel()
@@ -27,7 +27,7 @@ struct TodayTimeEntriesView: View {
             WeekRowView(
                 weekStartDate: $weekStartDate,
                 selectedDate: $selectedDate,
-                timeEntriesByDate: viewModel.timeEntriesByDate
+                timeEntriesByDate: viewModel.timeEntriesByDate,
             )
 
             // Date header
@@ -62,12 +62,12 @@ struct TodayTimeEntriesView: View {
                 await viewModel.loadEntries(for: selectedDate)
             }
         }
-        .onChange(of: selectedDate) { oldDate, newDate in
+        .onChange(of: selectedDate) { _, newDate in
             _Concurrency.Task {
                 await viewModel.loadEntries(for: newDate)
             }
         }
-        .onChange(of: weekStartDate) { oldDate, newDate in
+        .onChange(of: weekStartDate) { _, newDate in
             // When week changes, clear old data and preload new week in background
             viewModel.clearOldWeekData(keepWeekAround: newDate)
             // Preload new week entries in background (non-blocking, async)
@@ -150,7 +150,7 @@ struct TimeEntriesListView: View {
                 await viewModel.loadEntries(for: selectedDate)
             }
         }
-        .onChange(of: selectedDate) { oldDate, newDate in
+        .onChange(of: selectedDate) { _, newDate in
             // Skip if this change was triggered by a week change (to prevent duplicate fetches)
             if isChangingWeek {
                 return
@@ -172,7 +172,7 @@ struct TimeEntriesListView: View {
                     let daysFromMonday = (weekday + 5) % 7
                     if let weekStart = calendar.date(byAdding: .day, value: -daysFromMonday, to: newDate) {
                         var allDaysCached = true
-                        for dayOffset in 0..<7 {
+                        for dayOffset in 0 ..< 7 {
                             guard let weekDate = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) else { continue }
                             let dayString = dateFormatter.string(from: weekDate)
                             if viewModel.timeEntriesByDate[dayString] == nil {
@@ -229,8 +229,8 @@ struct WeekRowView: View {
     @Binding var weekStartDate: Date
     @Binding var selectedDate: Date
     let timeEntriesByDate: [String: [TimeEntry]]
-    var timerViewModel: TimerViewModel? = nil
-    var onDateSelected: ((Date) -> Void)? = nil
+    var timerViewModel: TimerViewModel?
+    var onDateSelected: ((Date) -> Void)?
 
     private let calendar = Calendar.current
     private let dateFormatter: DateFormatter = {
@@ -241,7 +241,7 @@ struct WeekRowView: View {
     }()
 
     private var weekDays: [Date] {
-        (0..<7).compactMap { dayOffset in
+        (0 ..< 7).compactMap { dayOffset in
             calendar.date(byAdding: .day, value: dayOffset, to: weekStartDate)
         }
     }
@@ -256,9 +256,9 @@ struct WeekRowView: View {
         return entries.reduce(0.0) { total, entry in
             // If this entry is the running timer, use live elapsed time instead of static hours
             if entry.id == runningTimerEntryId, let elapsed = timerViewModel?.runningTimer?.elapsedTime {
-                return total + (elapsed / 3600.0) // Convert seconds to hours
+                total + (elapsed / 3600.0) // Convert seconds to hours
             } else {
-                return total + (entry.hours ?? 0.0)
+                total + (entry.hours ?? 0.0)
             }
         }
     }
@@ -286,10 +286,13 @@ struct WeekRowView: View {
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
+            #if os(macOS)
+                .focusEffectDisabled()
+            #endif
 
             // Days of week
             HStack(spacing: 8) {
-                ForEach(Array(weekDays.enumerated()), id: \.element) { index, date in
+                ForEach(Array(weekDays.enumerated()), id: \.element) { _, date in
                     let isSelected = calendar.isDate(date, inSameDayAs: selectedDate)
                     let isToday = calendar.isDateInToday(date)
                     let hours = totalHours(for: date)
@@ -328,6 +331,9 @@ struct WeekRowView: View {
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
+            #if os(macOS)
+                .focusEffectDisabled()
+            #endif
         }
         .onChange(of: timerViewModel?.runningTimer?.elapsedTime) { _, _ in
             // Force view update when timer increments - this triggers a re-render
@@ -337,8 +343,9 @@ struct WeekRowView: View {
         }
         .background {
             // Helper view to observe timer updates for week view
-            if let timerViewModel = timerViewModel,
-               let runningTimer = timerViewModel.runningTimer {
+            if let timerViewModel,
+               let runningTimer = timerViewModel.runningTimer
+            {
                 Color.clear
                     .onReceive(runningTimer.$elapsedTime) { _ in
                         // This will trigger a re-render of the parent view
@@ -461,7 +468,8 @@ struct TimerObserverContainer: View {
         Group {
             // When timerViewModel changes, this will re-evaluate
             if let runningTimer = timerViewModel.runningTimer,
-               runningTimer.timeEntry.id == entryId {
+               runningTimer.timeEntry.id == entryId
+            {
                 // Observe the RunningTimer directly
                 TimerObserverView(runningTimer: runningTimer) { elapsedTime in
                     onElapsedTimeUpdate(elapsedTime)
@@ -523,7 +531,8 @@ struct TimeEntryRowView: View {
 
                     // Check if this entry matches the running timer FIRST (regardless of entry.isRunning flag)
                     if let runningTimer = timerViewModel.runningTimer,
-                       runningTimer.timeEntry.id == entry.id {
+                       runningTimer.timeEntry.id == entry.id
+                    {
                         // This entry matches the running timer - show the same elapsed time as the big timer
                         // Directly use runningTimer.elapsedTime - it will update automatically because we observe timerViewModel
                         BlinkingTimerView(elapsedTime: runningTimer.elapsedTime)
@@ -569,7 +578,7 @@ struct TimeEntryRowView: View {
                 projectsViewModel: projectsViewModel,
                 onSave: {
                     await viewModel.loadEntries(for: selectedDate)
-                }
+                },
             )
         }
         .contextMenu {
@@ -587,7 +596,7 @@ struct TimeEntryRowView: View {
             .disabled(isDeleting)
         }
         .alert("Delete Time Entry", isPresented: $showingDeleteAlert) {
-            Button("Cancel", role: .cancel) { }
+            Button("Cancel", role: .cancel) {}
             Button("Delete", role: .destructive) {
                 deleteEntry()
             }
@@ -598,7 +607,8 @@ struct TimeEntryRowView: View {
         // This is the same pattern as TimerViewContent - directly observe the RunningTimer
         .background {
             if let runningTimer = timerViewModel.runningTimer,
-               runningTimer.timeEntry.id == entry.id {
+               runningTimer.timeEntry.id == entry.id
+            {
                 // Observe the RunningTimer directly - same as TimerViewContent does
                 // This ensures the view updates when elapsedTime changes
                 TimerObserverView(runningTimer: runningTimer) { _ in }
@@ -606,14 +616,14 @@ struct TimeEntryRowView: View {
         }
     }
 
-
     private func deleteEntry() {
         isDeleting = true
         _Concurrency.Task {
             do {
                 // If this is the running timer, stop it first
                 if let runningTimer = timerViewModel.runningTimer,
-                   runningTimer.timeEntry.id == entry.id {
+                   runningTimer.timeEntry.id == entry.id
+                {
                     // Stop the timer - this will clear runningTimer and update the UI
                     await timerViewModel.stopTimer()
                     // Wait a moment to ensure the timer state is updated
@@ -626,7 +636,7 @@ struct TimeEntryRowView: View {
                 isDeleting = false
             } catch {
                 // If entry is already deleted (404), treat as success
-                if case HarvestAPIError.httpError(let code) = error, code == 404 {
+                if case let HarvestAPIError.httpError(code) = error, code == 404 {
                     // Entry already deleted, remove from cache and treat as success
                     viewModel.removeTimeEntry(entry, forSelectedDate: selectedDate)
                     isDeleting = false
@@ -682,7 +692,7 @@ class TodayTimeEntriesViewModel: ObservableObject {
     /// Uses startedTime (actual work time) if available, otherwise timerStartedAt (for running timers),
     /// otherwise createdAt as fallback.
     private func sortTimeEntries(_ entries: [TimeEntry]) -> [TimeEntry] {
-        return entries.sorted { entry1, entry2 in
+        entries.sorted { entry1, entry2 in
             // Helper to get a Date object representing when the work started for sorting
             func getStartDate(for entry: TimeEntry) -> Date? {
                 // First priority: startedTime (the actual start time of work)
@@ -701,7 +711,8 @@ class TodayTimeEntriesViewModel: ObservableObject {
                     let timeComponents = startedTime.split(separator: ":")
                     guard timeComponents.count == 2,
                           let hour = Int(timeComponents[0]),
-                          let minute = Int(timeComponents[1]) else {
+                          let minute = Int(timeComponents[1])
+                    else {
                         return nil
                     }
 
@@ -770,7 +781,7 @@ class TodayTimeEntriesViewModel: ObservableObject {
 
         if !forceRefresh {
             // Only show loading if we don't have cached data AND we don't have any entries showing
-            if !hasCachedData && !hasEntriesShowing {
+            if !hasCachedData, !hasEntriesShowing {
                 isLoading = true
             }
         } else {
@@ -789,7 +800,8 @@ class TodayTimeEntriesViewModel: ObservableObject {
             let weekday = calendar.component(.weekday, from: date)
             let daysFromMonday = (weekday + 5) % 7
             guard let weekStart = calendar.date(byAdding: .day, value: -daysFromMonday, to: date),
-                  let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) else {
+                  let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart)
+            else {
                 // Fallback to single day fetch if date calculation fails
                 let allEntries = try await apiClient.getTimeEntries(spentDate: dateString)
                 let entries = sortTimeEntries(allEntries.filter { entry in entry.spentDate == dateString })
@@ -809,7 +821,7 @@ class TodayTimeEntriesViewModel: ObservableObject {
             let entriesByDate = Dictionary(grouping: allEntries) { $0.spentDate }
 
             // Update cache for all days in the week, sorting each day's entries
-            for dayOffset in 0..<7 {
+            for dayOffset in 0 ..< 7 {
                 guard let weekDate = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) else { continue }
                 let dayString = dateFormatter.string(from: weekDate)
                 let dayEntries = entriesByDate[dayString] ?? []
@@ -859,7 +871,7 @@ class TodayTimeEntriesViewModel: ObservableObject {
             let today = Date()
             var allCached = true
             var missingDays: [String] = []
-            for dayOffset in 0..<7 {
+            for dayOffset in 0 ..< 7 {
                 guard let weekDate = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) else { continue }
                 let dateString = dateFormatter.string(from: weekDate)
                 // Check if cached (even if empty array, it's still cached)
@@ -909,7 +921,7 @@ class TodayTimeEntriesViewModel: ObservableObject {
 
             // Update cache for each day in the week, sorting each day's entries
             let today = Date()
-            for dayOffset in 0..<7 {
+            for dayOffset in 0 ..< 7 {
                 guard let weekDate = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) else { continue }
                 let dateString = dateFormatter.string(from: weekDate)
                 let entries = entriesByDate[dateString] ?? []
@@ -924,7 +936,7 @@ class TodayTimeEntriesViewModel: ObservableObject {
             print("   📋 Total cache keys after update: \(timeEntriesByDate.keys.sorted().joined(separator: ", "))")
         } catch {
             // Silently fail for preloading - set empty arrays so we don't retry
-            for dayOffset in 0..<7 {
+            for dayOffset in 0 ..< 7 {
                 guard let weekDate = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) else { continue }
                 let dateString = dateFormatter.string(from: weekDate)
                 // Only set empty array if not already cached (don't overwrite existing cache on error)
@@ -956,7 +968,7 @@ class TodayTimeEntriesViewModel: ObservableObject {
         timeEntriesByDate[dateString] = entries
 
         // If this date is currently displayed, update the displayed entries
-        if let selectedDate = selectedDate {
+        if let selectedDate {
             let selectedDateString = dateFormatter.string(from: selectedDate)
             if dateString == selectedDateString {
                 timeEntries = entries
@@ -976,7 +988,7 @@ class TodayTimeEntriesViewModel: ObservableObject {
         timeEntriesByDate[dateString] = entries
 
         // If this date is currently displayed, update the displayed entries
-        if let selectedDate = selectedDate {
+        if let selectedDate {
             let selectedDateString = dateFormatter.string(from: selectedDate)
             if dateString == selectedDateString {
                 timeEntries = entries
@@ -1016,11 +1028,9 @@ class TodayTimeEntriesViewModel: ObservableObject {
             timeEntriesByDate.removeValue(forKey: key)
         }
     }
-
 }
 
 #Preview {
     TodayTimeEntriesView()
         .padding()
 }
-

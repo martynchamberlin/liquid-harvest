@@ -5,8 +5,8 @@
 //  Created by Martyn Chamberlin on 11/29/25.
 //
 
-import Foundation
 import Combine
+import Foundation
 
 @MainActor
 class ProjectsViewModel: ObservableObject {
@@ -44,4 +44,3 @@ class ProjectsViewModel: ObservableObject {
         }
     }
 }
-

@@ -62,4 +62,3 @@ struct TaskAssignmentResponse: Codable {
         case taskAssignments = "task_assignments"
     }
 }
-

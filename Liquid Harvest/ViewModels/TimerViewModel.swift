@@ -5,8 +5,8 @@
 //  Created by Martyn Chamberlin on 11/29/25.
 //
 
-import Foundation
 import Combine
+import Foundation
 
 @MainActor
 class TimerViewModel: ObservableObject {
@@ -16,6 +16,7 @@ class TimerViewModel: ObservableObject {
             oldValue?.stopUpdating()
         }
     }
+
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var selectedProject: Project?
@@ -46,8 +47,8 @@ class TimerViewModel: ObservableObject {
         Timer.publish(every: 60.0, on: .main, in: .common)
             .autoconnect()
             .sink(receiveValue: { [weak self] _ in
-                guard let self = self else { return }
-                self.refreshRunningTimerAsync()
+                guard let self else { return }
+                refreshRunningTimerAsync()
             })
             .store(in: &cancellables)
 
@@ -58,8 +59,8 @@ class TimerViewModel: ObservableObject {
     private func refreshRunningTimerAsync() {
         // Use explicit Swift concurrency Task to avoid conflict with Harvest Task model
         _Concurrency.Task { @MainActor [weak self] in
-            guard let self = self else { return }
-            await self.refreshRunningTimer()
+            guard let self else { return }
+            await refreshRunningTimer()
         }
     }
 
@@ -124,7 +125,7 @@ class TimerViewModel: ObservableObject {
                 endedTime: nil,
                 hours: nil, // No hours for timer entries - they track time automatically
                 notes: notes,
-                externalReference: nil
+                externalReference: nil,
             )
 
             let timeEntry = try await apiClient.createTimeEntry(request)
@@ -142,7 +143,7 @@ class TimerViewModel: ObservableObject {
             NotificationCenter.default.post(
                 name: NSNotification.Name("TimeEntryCreated"),
                 object: nil,
-                userInfo: ["timeEntry": timeEntry]
+                userInfo: ["timeEntry": timeEntry],
             )
 
             isLoading = false
@@ -155,7 +156,7 @@ class TimerViewModel: ObservableObject {
                 errorMessage = nil
             } else {
                 // Check if error indicates timer is already running (422 Unprocessable Entity is common)
-                if case HarvestAPIError.httpError(let code) = error, code == 422 {
+                if case let HarvestAPIError.httpError(code) = error, code == 422 {
                     // Timer might already be running, refresh to check
                     await refreshRunningTimer()
                     if runningTimer != nil {
@@ -196,7 +197,7 @@ class TimerViewModel: ObservableObject {
             NotificationCenter.default.post(
                 name: NSNotification.Name("TimeEntryStopped"),
                 object: nil,
-                userInfo: ["timeEntry": timeEntry]
+                userInfo: ["timeEntry": timeEntry],
             )
 
             isLoading = false
@@ -234,7 +235,7 @@ class TimerViewModel: ObservableObject {
                 endedTime: nil,
                 hours: nil,
                 notes: newDescription,
-                externalReference: nil
+                externalReference: nil,
             )
 
             let updatedEntry = try await apiClient.updateTimeEntry(id: timerId, request: request)
@@ -246,11 +247,10 @@ class TimerViewModel: ObservableObject {
             NotificationCenter.default.post(
                 name: NSNotification.Name("TimerUpdated"),
                 object: nil,
-                userInfo: ["timeEntry": updatedEntry]
+                userInfo: ["timeEntry": updatedEntry],
             )
         } catch {
             errorMessage = error.localizedDescription
         }
     }
 }
-

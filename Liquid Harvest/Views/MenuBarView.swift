@@ -5,8 +5,8 @@
 //  Created by Martyn Chamberlin on 11/29/25.
 //
 
-import SwiftUI
 import AppKit
+import SwiftUI
 
 struct MenuBarTimerContent: View {
     @ObservedObject var runningTimer: RunningTimer
@@ -66,7 +66,7 @@ struct MenuBarView: View {
         NSApp.activate(ignoringOtherApps: true)
 
         // Check if any windows are already open
-        let visibleWindows = NSApp.windows.filter { $0.isVisible }
+        let visibleWindows = NSApp.windows.filter(\.isVisible)
 
         if !visibleWindows.isEmpty {
             // Windows exist - bring them all to front without resizing
@@ -147,7 +147,7 @@ struct MenuBarView: View {
                 }
             }
         }
-        .onChange(of: authViewModel.isAuthenticated) { oldValue, newValue in
+        .onChange(of: authViewModel.isAuthenticated) { _, newValue in
             if newValue {
                 // Immediately check for running timer when authenticated
                 _Concurrency.Task {
@@ -164,4 +164,3 @@ struct MenuBarView: View {
 #Preview {
     MenuBarView()
 }
-

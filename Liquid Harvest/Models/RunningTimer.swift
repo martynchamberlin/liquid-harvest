@@ -5,8 +5,8 @@
 //  Created by Martyn Chamberlin on 11/29/25.
 //
 
-import Foundation
 import Combine
+import Foundation
 
 class RunningTimer: ObservableObject {
     let timeEntry: TimeEntry
@@ -48,16 +48,16 @@ class RunningTimer: ObservableObject {
             }
 
             if let parsedDate = date {
-                self.startDate = parsedDate
-                self.elapsedTime = Date().timeIntervalSince(parsedDate)
-                print("✅ Parsed timer start date: \(timerStartedAt) -> \(parsedDate), elapsed: \(self.elapsedTime)s")
+                startDate = parsedDate
+                elapsedTime = Date().timeIntervalSince(parsedDate)
+                print("✅ Parsed timer start date: \(timerStartedAt) -> \(parsedDate), elapsed: \(elapsedTime)s")
             } else {
                 print("❌ Failed to parse timer start date: \(timerStartedAt)")
-                self.elapsedTime = 0
+                elapsedTime = 0
             }
         } else {
             print("⚠️ No timer_started_at in time entry")
-            self.elapsedTime = 0
+            elapsedTime = 0
         }
 
         startUpdating()
@@ -76,20 +76,20 @@ class RunningTimer: ObservableObject {
         // Update every second for the first minute, then every minute after that
         // Timer is scheduled on main run loop, so updates happen on main thread
         updateTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
-            guard let self = self, let startDate = self.startDate else { return }
+            guard let self, let startDate else { return }
             // Calculate elapsed time from local clock
             let elapsed = Date().timeIntervalSince(startDate)
-            self.elapsedTime = elapsed
+            elapsedTime = elapsed
 
             // After 1 minute (60 seconds), switch to updating every minute
-            if elapsed >= 60.0 && timer.timeInterval == 1.0 {
+            if elapsed >= 60.0, timer.timeInterval == 1.0 {
                 timer.invalidate()
                 // Switch to 60 second updates
-                self.updateTimer = Timer.scheduledTimer(withTimeInterval: 60.0, repeats: true) { [weak self] _ in
-                    guard let self = self, let startDate = self.startDate else { return }
-                    self.elapsedTime = Date().timeIntervalSince(startDate)
+                updateTimer = Timer.scheduledTimer(withTimeInterval: 60.0, repeats: true) { [weak self] _ in
+                    guard let self, let startDate = self.startDate else { return }
+                    elapsedTime = Date().timeIntervalSince(startDate)
                 }
-                if let newTimer = self.updateTimer {
+                if let newTimer = updateTimer {
                     RunLoop.main.add(newTimer, forMode: .common)
                 }
             }
@@ -113,4 +113,3 @@ class RunningTimer: ObservableObject {
         return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
     }
 }
-

@@ -5,8 +5,8 @@
 //  Created by Martyn Chamberlin on 11/29/25.
 //
 
-import Foundation
 import Combine
+import Foundation
 
 @MainActor
 class AuthenticationViewModel: ObservableObject {
@@ -18,6 +18,7 @@ class AuthenticationViewModel: ObservableObject {
     private var authManager: AuthenticationManager {
         AuthenticationManager.shared
     }
+
     private var cancellables = Set<AnyCancellable>()
     private var subscriptionsSetup = false
 
@@ -30,23 +31,23 @@ class AuthenticationViewModel: ObservableObject {
         subscriptionsSetup = true
 
         // Set initial values first
-        self.isAuthenticated = authManager.isAuthenticated
-        self.currentUser = authManager.currentUser
+        isAuthenticated = authManager.isAuthenticated
+        currentUser = authManager.currentUser
 
         // Subscribe to authentication manager updates
         authManager.$isAuthenticated
             .receive(on: DispatchQueue.main)
             .sink { [weak self] value in
-                guard let self = self else { return }
-                self.isAuthenticated = value
+                guard let self else { return }
+                isAuthenticated = value
             }
             .store(in: &cancellables)
 
         authManager.$currentUser
             .receive(on: DispatchQueue.main)
             .sink { [weak self] value in
-                guard let self = self else { return }
-                self.currentUser = value
+                guard let self else { return }
+                currentUser = value
             }
             .store(in: &cancellables)
     }
@@ -64,7 +65,7 @@ class AuthenticationViewModel: ObservableObject {
         NotificationCenter.default.addObserver(
             forName: NSNotification.Name("OAuthSuccess"),
             object: nil,
-            queue: .main
+            queue: .main,
         ) { [weak self] _ in
             self?.isLoading = false
         }
@@ -72,7 +73,7 @@ class AuthenticationViewModel: ObservableObject {
         NotificationCenter.default.addObserver(
             forName: NSNotification.Name("OAuthError"),
             object: nil,
-            queue: .main
+            queue: .main,
         ) { [weak self] notification in
             self?.isLoading = false
             if let error = notification.userInfo?["error"] as? String {
@@ -95,4 +96,3 @@ class AuthenticationViewModel: ObservableObject {
         authManager.logout()
     }
 }
-

@@ -100,4 +100,3 @@ struct Company: Codable {
 struct CompanyResponse: Codable {
     let company: Company
 }
-

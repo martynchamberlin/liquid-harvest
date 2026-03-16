@@ -96,4 +96,3 @@ struct Client: Codable, Identifiable, Equatable {
         case updatedAt = "updated_at"
     }
 }
-

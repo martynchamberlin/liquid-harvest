@@ -146,4 +146,3 @@ struct SetupView: View {
         print("Setup complete")
     }
 }
-
